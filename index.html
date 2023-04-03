@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>MyBatis Log Convert</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<style>
+		body {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+            background-color: black; /* Added this line to change the background color to black */
+		}
+		textarea {
+			padding: 10px;
+			border-radius: 5px;
+			border: 1px solid #9f9f9d; /* Changed the border color to #00589f */
+			font-size: 10px;
+			width: 80%;
+			box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            height: 80%;
+            resize: none;
+            color: #9f9f9d; /* Changed the text color to #9f9f9d */
+            background-color: black; /* Added this line to change the background color of the textarea to black */
+        }
+	</style>
+</head>
+<body>
+	<textarea id="log" placeholder="Enter text here"></textarea>
+    <input type="hidden" name="submit" id="enter" onClick="transLog()">
+</body>
+<script>
+    document.addEventListener("keydown",keydown);
+    function keydown(event)
+    {
+      if (event.keyCode == 13) {
+        document.getElementById("enter").click();
+      }
+    }
+
+    function transLog() {
+      var textVa = document.getElementById("log").value;
+      // 获取带问号的SQL语句
+      var statementStartIndex = textVa.indexOf('Preparing: ');
+      var statementEndIndex = textVa.length - 1;
+      for (var i = statementStartIndex; i < textVa.length; i++) {
+        if (textVa[i] == "\n") {
+          statementEndIndex = i;
+          break;
+        }
+      }
+      var statementStr = textVa.substring(statementStartIndex + "Preparing: ".length, statementEndIndex);
+      //获取参数
+      var parametersStartIndex = textVa.indexOf('Parameters: ');
+      var parametersEndIndex = textVa.length;
+      for (var i = parametersStartIndex; i < textVa.length; i++) {
+        if (textVa[i] == "\n") {
+          parametersEndIndex = i;
+          break;
+        }
+      }
+      var parametersStr = textVa.substring(parametersStartIndex + "Parameters: ".length, parametersEndIndex);
+
+      // 参数列表
+      var parametersStrArr = parametersStr.split(",");
+
+      for (var i = 0; i < parametersStrArr.length; i++) {
+        tempStr = parametersStrArr[i].substring(0, parametersStrArr[i].indexOf("("));
+        // 不含"("是null
+        if (tempStr == '') {
+          tempStr = "null";
+        }
+        // 如果数据中带括号需要判断参数类型
+        typeStr = parametersStrArr[i].substring(parametersStrArr[i].indexOf("(") + 1, parametersStrArr[i].indexOf(")"));
+        if (typeStr == "String" || typeStr == "Timestamp") {
+          statementStr = statementStr.replace("?", "'" + tempStr.trim() + "'");
+        } else {
+          statementStr = statementStr.replace("?", tempStr.trim());
+        }
+      }
+
+      statementStr += ";";
+      copyToClip(statementStr);
+    }
+
+    //复制到剪贴板
+    function copyToClip(content) {
+      var aux = document.createElement("input");
+      aux.setAttribute("value", content);
+      document.body.appendChild(aux);
+      aux.select();
+      document.execCommand("copy");
+      document.body.removeChild(aux);
+    }
+</script>
+</html>
